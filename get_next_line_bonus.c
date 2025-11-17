@@ -225,13 +225,16 @@ char	*get_next_line(int fd)
 	temp = stash;
 	while (temp)
 	{
+		printf("***");
 		last = temp;
 		if(temp->next == NULL && temp->fd != fd)
+		{
 			break ;
+		}
 		if (temp->fd == fd)  
 		{
-			temp->content = read_to_stash(fd, temp->content);
-			break ;
+		temp->content = read_to_stash(fd, temp->content);
+		break ;
 		}
 		temp = temp->next;
 	}
@@ -241,8 +244,9 @@ char	*get_next_line(int fd)
 		if (!new)
 			return (NULL);
 		new->content = malloc(1);
-		if(!new->content)
+		if (!new->content)
 		{
+			free(new);
 			free(stash);
 			return (NULL);
 		}	
@@ -250,7 +254,7 @@ char	*get_next_line(int fd)
 		new->next = NULL;
 		new->fd = fd;
 		new->content = read_to_stash(fd, new->content);
-		temp->next = new;
+		last->next = new;
 	}                                                     
 	if (temp)
 	{
@@ -268,11 +272,11 @@ char	*get_next_line(int fd)
 
 int main()
 {
-	int fd = open("test.txt", O_RDONLY);
-	printf("%s", get_next_line(fd));
-	close(fd);
+	int fd1 = open("test.txt", O_RDONLY);
+	printf("%s", get_next_line(fd1));
 
-	fd = open("test2.txt", O_RDONLY);
-	printf("%s", get_next_line(fd));
-	close(fd);
+	int fd2 = open("test2.txt", O_RDONLY);
+	printf("%s", get_next_line(fd2));
+	
+	printf("%s", get_next_line(fd1));
 }
