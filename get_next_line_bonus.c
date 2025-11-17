@@ -1,18 +1,13 @@
-#include "get_next_line.h"
-#include <fcntl.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <stdint.h>
+#include "get_next_line_bonus.h"
 
-int countToNewLine(char *str)
+int	countToNewLine(char *str)
 {
 	int i = 0;
 	while (str[i] != '\n' && str[i] != '\0')
 	{
 		i++;
 	}
-	return i;
+	return (i);
 }
 
 size_t	ft_strlen(const char *str)
@@ -65,7 +60,7 @@ int	findnline(char *s)
 			return 1;
 		i++;
 	}
-	return 0;
+	return (0);
 }
 
 char	*ft_strjoin(char const *s1, char const *s2)
@@ -122,49 +117,40 @@ void	*ft_calloc(size_t count, size_t size)
 	return (temp);
 }
 
-char *free_and_return_null(char *ptr1, char *ptr2)
+
+char	*free_and_return_null(char *ptr1, char *ptr2)
 {
-    if (ptr1)
-        free(ptr1);
-    if (ptr2)
-        free(ptr2);
-    return NULL;
+	if (ptr1)
+		free (ptr1);
+	if (ptr2)
+		free (ptr2);
+	return (NULL);
 }
 
-char *read_to_stash(int fd, char *stash)
+char	*read_to_stash(int fd, char *stash)
 {
 	char	*buff;
 	ssize_t	nb_read;
 	char	*temp;
 
-	buff = malloc(BUFFER_SIZE+1);
-    if (!buff)
-    {
-        free(stash);
-        return NULL;
-    }
+	buff = malloc(BUFFER_SIZE + 1);
+	if (!buff)
+		return (free_and_return_null(stash, NULL));
 	while (!findnline(stash))
 	{
 		nb_read = read(fd, buff, BUFFER_SIZE);
 		if (nb_read == 0)
-			break;
+			break ;
 		if (nb_read < 0)
-		{
-			return free_and_return_null(buff, stash);
-		}
-		if (nb_read > 0)
-		{
-			buff[nb_read] = '\0';
-			temp = ft_strjoin(stash, buff);
-			if (!temp)
-			{
-    			return free_and_return_null(buff, stash);
-			}
-			free(stash);
-			stash = temp;
-		}
+			return (free_and_return_null(buff, stash));
+		buff[nb_read] = '\0';
+		temp = ft_strjoin(stash, buff);
+		if (!temp)
+			return (free_and_return_null(buff, stash));
+		free (stash);
+		stash = temp;
 	}
-	free(buff);
+	free (buff);
 	return (stash);
 }
 
@@ -173,27 +159,28 @@ char	*extract_line_and_update_stash(char **stash)
 	int		y;
 	char	*line;
 	char	*leftover;
+	int		i;
 
 	y = countToNewLine(*stash);
-	line = ft_substr(*stash, 0, y+1);
+	line = ft_substr(*stash, 0, y + 1);
 	if (!line)
 	{
-		free(*stash);
+		free (*stash);
 		*stash = NULL;
 		return (NULL);
 	}
-	int i = ft_strlen(*stash);
-	leftover = ft_substr(*stash, y+1, i - (y+1));
+	i = ft_strlen(*stash);
+	leftover = ft_substr(*stash, y + 1, i - (y + 1));
 	if (!leftover)
 	{
-		free(line);
-		free(*stash);
+		free (line);
+		free (*stash);
 		*stash = NULL;
 		return (NULL);
 	}
-	free(*stash);
+	free (*stash);
 	*stash = leftover;
-	return line;
+	return (line);
 }
 
 char	*extract_final_line(char **stash)
@@ -209,61 +196,83 @@ char	*extract_final_line(char **stash)
 		*stash = NULL;
 		return (NULL);
 	}
-	free(*stash);
+	free (*stash);
 	*stash = NULL;
-	return line;
+	return (line);
 }
 
-char *get_next_line(int fd)
+char	*get_next_line(int fd)
 {
-	int				found;
-	char			*line;
-	static char		*stash;
-
-	if (fd < 0 || BUFFER_SIZE <= 0)
-		return (NULL);
-	if (stash == NULL)
+	static	t_list	*stash;
+	t_list			*temp;
+	t_list			*new;
+	t_list			*last;
+	if (!stash)
 	{
-		stash = malloc(1);
+		stash = malloc(sizeof(t_list));
 		if (!stash)
 			return (NULL);
-		stash[0] = '\0';
-	}
-	stash = read_to_stash(fd, stash);
-	if (stash == NULL)
-    return NULL;
-	found = findnline(stash);
-	if (stash != NULL)
-	{
-		if (found)
-		{
-			return (extract_line_and_update_stash(&stash));
-		}
-		else if (stash[0] != '\0')
-		{
-			return (extract_final_line(&stash));
-		}
-		else if (stash[0] == '\0')
+		stash->content = malloc(1);
+		if(!stash->content)
 		{
 			free(stash);
-			stash = NULL;
-			return NULL;
-		}
+			return (NULL);
+		}	
+		stash->content[0] = '\0';
+		stash->next = NULL;
+		stash->fd = fd;
 	}
-	free(stash);
-	return NULL;
+	temp = stash;
+	while (temp)
+	{
+		last = temp;
+		if(temp->next == NULL && temp->fd != fd)
+			break ;
+		if (temp->fd == fd)  
+		{
+			temp->content = read_to_stash(fd, temp->content);
+			break ;
+		}
+		temp = temp->next;
+	}
+	if (last  && temp->fd != fd)
+	{
+		new = malloc(sizeof(t_list));
+		if (!new)
+			return (NULL);
+		new->content = malloc(1);
+		if(!new->content)
+		{
+			free(stash);
+			return (NULL);
+		}	
+		new->content[0] = '\0';
+		new->next = NULL;
+		new->fd = fd;
+		new->content = read_to_stash(fd, new->content);
+		temp->next = new;
+	}                                                     
+	if (temp)
+	{
+		if (findnline(temp->content))
+			return (extract_line_and_update_stash(&temp->content));
+		else if (temp->content[0] != '\0')
+			return (extract_final_line(&temp->content));
+		free(temp->content);
+		temp->content = NULL;
+		return (NULL);
+	}
+	free (temp->content);
+	return (NULL);
 }
 
 int main()
 {
-	
 	int fd = open("test.txt", O_RDONLY);
+	printf("%s", get_next_line(fd));
+	close(fd);
 
-	char* ptr;
-	while ((ptr = get_next_line(fd)) != NULL)
-	{	
-		printf("%s", ptr);
-		free(ptr);
-	}
+	fd = open("test2.txt", O_RDONLY);
+	printf("%s", get_next_line(fd));
 	close(fd);
 }
