@@ -203,46 +203,98 @@ char	*extract_final_line(char **stash)
 
 char	*get_next_line(int fd)
 {
-	static char		*stash[1024];
+	static	t_list	*stash;
+	t_list			*temp;
+	t_list			*new;
+	t_list			*last;
 
-	if (fd < 0 || BUFFER_SIZE <= 0 || fd >= 1024)
-		return (NULL);
-	if (stash[fd] == NULL)
+	if (!stash)
 	{
-		stash[fd] = malloc(1);
-		if (!stash[fd])
+		stash = malloc(sizeof(t_list));
+		if (!stash)
 			return (NULL);
-		stash[fd][0] = '\0';
+		stash->content = malloc(1);
+		if(!stash->content)
+		{
+			free(stash);
+			return (NULL);
+		}
+		stash->content[0] = '\0';
+		stash->next = NULL;
+		stash->fd = fd;
+		stash->content = read_to_stash(fd, stash->content);
+		temp = stash;
+		printf("1");
 	}
-	stash[fd] = read_to_stash(fd, stash[fd]);
-	if (stash[fd] != NULL)
+	if (stash)
 	{
-		if (findnline(stash[fd]))
-			return (extract_line_and_update_stash(&stash[fd]));
-		else if (stash[fd][0] != '\0')
-			return (extract_final_line(&stash[fd]));
-		free(stash[fd]);
-		stash[fd] = NULL;
+		printf("2");
+		int i=0;
+		temp = stash;
+		while (temp)
+		{
+			last = temp;
+			if (temp->fd == fd)
+			{
+				temp->content = read_to_stash(fd, temp->content);
+				break ;
+			}
+			printf("%d", i+1);
+			temp = temp->next;
+		}
+		temp = last;
+	}
+	else
+	{
+		printf("?");
+		if (temp->next == NULL)
+		{
+			printf("why");
+			new = malloc(sizeof(t_list));
+			if (!new)
+				return (NULL);
+			new->content = malloc(1);
+			if (!new->content)
+			{
+				free(new);
+				free(stash);
+				return (NULL);
+			}	
+			new->content[0] = '\0';
+			new->next = NULL;
+			new->fd = fd;
+			new->content = read_to_stash(fd, new->content);
+			last->next = new;
+			temp = new;
+		}
+	}
+	if (temp)
+	{
+		if (findnline(temp->content))
+			return (extract_line_and_update_stash(&temp->content));
+		else if (temp->content[0] != '\0')
+			return (extract_final_line(&temp->content));
+		free(temp->content);
+		temp->content = NULL;
 		return (NULL);
 	}
-	free (stash[fd]);
+	free (temp->content);
 	return (NULL);
 }
-
 int main()
 {
 	int fd1 = open("test.txt", O_RDONLY);
 	printf("%s", get_next_line(fd1));
- 
+
 	int fd2 = open("test2.txt", O_RDONLY);
 	printf("%s", get_next_line(fd2));
 	close(fd2);
 
-	int fd3 = open("test3.txt", O_RDONLY);
-	printf("%s", get_next_line(fd3));
-	close(fd3);
+	// int fd3 = open("test3.txt", O_RDONLY);
+	// printf("%s", get_next_line(fd3));
+	// close(fd3);
 
-	
+	 fd1 = open("test.txt", O_RDONLY);
 	printf("%s", get_next_line(fd1));
 	close(fd1);
 }
