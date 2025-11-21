@@ -15,7 +15,9 @@ char	*read_to_stash(int fd, char *stash)
 	ssize_t	nb_read;
 	char	*temp;
 
-	buff = malloc(BUFFER_SIZE + 1);
+	if (BUFFER_SIZE > SIZE_MAX - 1)
+		return (free_and_return_null(stash, NULL));
+	buff = malloc((size_t)BUFFER_SIZE + (size_t)1);
 	if (!buff)
 		return (free_and_return_null(stash, NULL));
 	while (!findnline(stash))
